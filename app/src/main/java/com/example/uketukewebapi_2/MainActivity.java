@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -80,43 +81,28 @@ public class MainActivity extends AppCompatActivity {
 //          String urlString = "http://192.168.11.4:8080/project/xxxx?user_id=35&password=12345";
             String urlString = "http://192.168.11.10:8080/project/userServlet?user_id=";
             urlString = urlString + searchId.getText().toString();
-            URL url = new URL( urlString );
-            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 //          URLConnection connection = url.openConnection();
-/*
-timeout とかはこの際無視
-*/
-            Log.d( TAG, "requestHTTP_json()  before openConnection()" );
-
-            connection.setRequestMethod( "GET" );
-
-            Log.d( TAG, "requestHTTP_json()  after openConnection()" );
-
-            connection.setDoInput( true );
-            connection.setDoOutput( true );
-            Log.d( TAG, "requestHTTP_json() before connect()" );
-
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(10000); //msec : コネクションタイムアウト：10秒
+            connection.setReadTimeout( 10000 ); //msec : inputStreamのリードタイムアウト：10秒（value specifies the timeout when reading from Input stream when a connection is established to a resource.）
+//            connection.setDoInput(true); //true:URLに対してRead dataを設定（デフォルト：true）
+//            connection.setDoOutput(true);//true:URLに対してwrite dataをする（デフォルト：false）
             connection.connect();
-
-            Log.d( TAG, "requestHTTP_json()  connect()" );
-
             int connectStatus = connection.getResponseCode();
-
-            Log.d( TAG, "requestHTTP_json() connectStatus" );
-
-            if( connectStatus == HttpsURLConnection.HTTP_OK ) {
-                Log.d( TAG, "HttpURLConnection.HTTP_OK" );
+            if (connectStatus == HttpsURLConnection.HTTP_OK) {
+                Log.d(TAG, "HttpURLConnection.HTTP_OK");
                 StringBuilder result = new StringBuilder();
-                result.setLength( 0 );
-
+                result.setLength(0);
                 //response読み込み
                 final InputStream inputStream = connection.getInputStream();
-//                                final String encoding = connection.getContentEncoding();
+//              final String encoding = connection.getContentEncoding();
                 final InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                 final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
                 String line = null;
-                while((line = bufferedReader.readLine()) != null) {
+                while ((line = bufferedReader.readLine()) != null) {
                     result.append(line);
                 }
 
@@ -124,17 +110,16 @@ timeout とかはこの際無視
                 inputStreamReader.close();
                 inputStream.close();
 
-                Log.d( TAG, "requestHTTP_json() "+result.toString() );
-
-                JSONObject jsonObject = new JSONObject( result.toString() );
-                TextView loginName = (TextView)findViewById( R.id.receive_data );
-                loginName.setText( jsonObject.getString( "name" ) );
-
-
+                JSONObject jsonObject = new JSONObject(result.toString());
+                TextView loginName = (TextView) findViewById(R.id.receive_data);
+                loginName.setText(jsonObject.getString("name"));
+            } else {
+                Log.d(TAG, "HttpURLConnection NG connectStatus = " + connectStatus);
             }
-            else {
-                Log.d( TAG, "NOT NOT HttpURLConnection.HTTP_OK" );
-            }
+        } catch ( SocketTimeoutException e ) { //connection timeout
+            Log.d( TAG, "connection timeout !" );
+        } catch ( IllegalArgumentException e ) { //input stream read timeout
+            Log.d( TAG, "read timeout !" );
         } catch (IOException | JSONException e) {
             Log.d( TAG, "なんでかな～" );
             e.printStackTrace();
