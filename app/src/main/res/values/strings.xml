@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">uketukeWebApi</string>
+    <string name="http_request">Search User</string>
+    <string name="receive_data">receive_data</string>
+    <string name="search_id">検索するID</string>
+    <string name="input_id">input id</string>
+</resources>
